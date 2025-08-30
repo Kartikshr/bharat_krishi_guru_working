@@ -30,14 +30,6 @@ interface PriceTrendData {
   formattedDate: string;
 }
 
-interface MarketInsight {
-  type: 'bullish' | 'bearish' | 'neutral';
-  title: string;
-  description: string;
-  commodities: string[];
-  confidence: number;
-}
-
 // Enhanced Indian commodity data with regional variations
 const INDIAN_COMMODITIES = [
   { name: "Rice", variety: "Basmati 1121", basePrice: 4200, seasonal: 0.15, volatility: 0.08 },
@@ -91,7 +83,6 @@ const MarketPrices = () => {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [selectedCommodity, setSelectedCommodity] = useState<string>("all");
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [marketInsights, setMarketInsights] = useState<MarketInsight[]>([]);
   const [priceAlerts, setPriceAlerts] = useState<any[]>([]);
   const { toast } = useToast();
   const { selectedLocation } = useLocation();
@@ -132,46 +123,6 @@ const MarketPrices = () => {
     }
     
     return trends;
-  };
-
-  const generateMarketInsights = (prices: MarketPrice[]): MarketInsight[] => {
-    const insights: MarketInsight[] = [];
-    
-    const gainers = prices.filter(p => p.trend === 'up' && p.change > 5);
-    const losers = prices.filter(p => p.trend === 'down' && p.change < -5);
-    const highVolume = prices.filter(p => p.volume > 200);
-    
-    if (gainers.length > 3) {
-      insights.push({
-        type: 'bullish',
-        title: 'Strong Market Rally',
-        description: `${gainers.length} commodities showing significant gains. Market sentiment is positive.`,
-        commodities: gainers.slice(0, 3).map(p => p.commodity),
-        confidence: 85
-      });
-    }
-    
-    if (losers.length > 3) {
-      insights.push({
-        type: 'bearish',
-        title: 'Market Correction',
-        description: `${losers.length} commodities declining. Consider holding or buying at lower levels.`,
-        commodities: losers.slice(0, 3).map(p => p.commodity),
-        confidence: 78
-      });
-    }
-    
-    if (highVolume.length > 2) {
-      insights.push({
-        type: 'neutral',
-        title: 'High Trading Activity',
-        description: `Increased trading volume in ${highVolume.length} commodities indicates active market participation.`,
-        commodities: highVolume.slice(0, 3).map(p => p.commodity),
-        confidence: 92
-      });
-    }
-    
-    return insights;
   };
 
   const generatePriceAlerts = (prices: MarketPrice[]) => {
@@ -249,10 +200,6 @@ const MarketPrices = () => {
       // Generate comprehensive price trends
       const trends = generatePriceTrends(currentPrices);
       setPriceTrends(trends);
-      
-      // Generate market insights
-      const insights = generateMarketInsights(currentPrices);
-      setMarketInsights(insights);
       
       // Generate price alerts
       generatePriceAlerts(currentPrices);
@@ -341,8 +288,8 @@ ${topLosers.slice(0, 2).map(p => `• ${p.commodity} - कम भाव मे�
   useEffect(() => {
     fetchMarketPrices();
     
-    // Auto-refresh every 10 minutes for more realistic updates
-    const interval = setInterval(fetchMarketPrices, 10 * 60 * 1000);
+    // Auto-refresh every 5 minutes for real-time feel
+    const interval = setInterval(fetchMarketPrices, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [selectedLocation]);
 
@@ -368,14 +315,6 @@ ${topLosers.slice(0, 2).map(p => `• ${p.commodity} - कम भाव मे�
       case 'up': return 'text-green-600';
       case 'down': return 'text-red-600';
       default: return 'text-muted-foreground';
-    }
-  };
-
-  const getInsightColor = (type: string) => {
-    switch (type) {
-      case 'bullish': return 'border-green-200 bg-green-50 text-green-800';
-      case 'bearish': return 'border-red-200 bg-red-50 text-red-800';
-      default: return 'border-blue-200 bg-blue-50 text-blue-800';
     }
   };
 
@@ -492,38 +431,6 @@ ${topLosers.slice(0, 2).map(p => `• ${p.commodity} - कम भाव मे�
                         </span>
                       </div>
                       <p className="text-xs text-gray-700">{alert.message}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Market Insights */}
-          {marketInsights.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-primary" />
-                  Market Insights / बाजार अंतर्दृष्टि
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {marketInsights.map((insight, index) => (
-                    <div key={index} className={`p-4 rounded-lg border-2 ${getInsightColor(insight.type)}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{insight.title}</h3>
-                        <span className="text-xs font-medium">{insight.confidence}% confidence</span>
-                      </div>
-                      <p className="text-sm mb-3">{insight.description}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {insight.commodities.map((commodity, idx) => (
-                          <span key={idx} className="text-xs px-2 py-1 bg-white/50 rounded-full">
-                            {commodity}
-                          </span>
-                        ))}
-                      </div>
                     </div>
                   ))}
                 </div>

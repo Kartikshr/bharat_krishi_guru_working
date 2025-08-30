@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Search, FileText, Award, Users, Calendar, Download, ExternalLink, Star, Clock, Tag, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { BookOpen, Search, FileText, Award, Users, Calendar, Download, ExternalLink, Star, Clock, Tag, Filter, Play, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "@/contexts/LocationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,6 +26,8 @@ interface Article {
   rating: number;
   downloads: number;
   author: string;
+  fullContent: string;
+  fullContentHindi: string;
 }
 
 interface Scheme {
@@ -42,6 +46,10 @@ interface Scheme {
   budget: string;
   ministry: string;
   status: 'active' | 'upcoming' | 'closed';
+  documents: string[];
+  documentsHindi: string[];
+  applicationSteps: string[];
+  applicationStepsHindi: string[];
 }
 
 interface Tutorial {
@@ -56,6 +64,10 @@ interface Tutorial {
   videoUrl: string;
   steps: string[];
   stepsHindi: string[];
+  materials: string[];
+  materialsHindi: string[];
+  tips: string[];
+  tipsHindi: string[];
 }
 
 const KnowledgeHub = () => {
@@ -63,6 +75,9 @@ const KnowledgeHub = () => {
   const [activeTab, setActiveTab] = useState<'articles' | 'schemes' | 'tutorials'>('articles');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
+  const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
   const { toast } = useToast();
   const { selectedLocation } = useLocation();
   const { language, t } = useLanguage();
@@ -73,8 +88,78 @@ const KnowledgeHub = () => {
       title: "Organic Farming Best Practices",
       titleHindi: `${selectedLocation} में जैविक खेती की सर्वोत्तम प्रथाएं`,
       category: "Organic Farming",
-      content: `Learn sustainable farming techniques specific to ${selectedLocation} that improve soil health and crop yield while protecting the environment. This comprehensive guide covers composting, natural pest control, crop rotation, and certification processes for organic farming in India.`,
-      contentHindi: `${selectedLocation} के लिए विशिष्ट टिकाऊ कृषि तकनीकें सीखें जो मिट्टी के स्वास्थ्य और फसल की उपज में सुधार करती हैं। इस व्यापक गाइड में कंपोस्टिंग, प्राकृतिक कीट नियंत्रण, फसल चक्र और भारत में जैविक खेती के लिए प्रमाणन प्रक्रियाएं शामिल हैं।`,
+      content: `Learn sustainable farming techniques specific to ${selectedLocation} that improve soil health and crop yield while protecting the environment.`,
+      contentHindi: `${selectedLocation} के लिए विशिष्ट टिकाऊ कृषि तकनीकें सीखें जो मिट्टी के स्वास्थ्य और फसल की उपज में सुधार करती हैं।`,
+      fullContent: `# Organic Farming Best Practices for ${selectedLocation}
+
+## Introduction
+Organic farming is becoming increasingly important in ${selectedLocation} as farmers seek sustainable alternatives to conventional agriculture. This comprehensive guide covers all aspects of organic farming suitable for local conditions.
+
+## Soil Health Management
+- **Composting**: Create nutrient-rich compost using farm waste, kitchen scraps, and green materials
+- **Crop Rotation**: Implement 3-4 year rotation cycles to maintain soil fertility
+- **Cover Crops**: Use leguminous plants to fix nitrogen naturally
+- **Mulching**: Apply organic mulch to retain moisture and suppress weeds
+
+## Natural Pest Control
+- **Beneficial Insects**: Encourage ladybugs, lacewings, and parasitic wasps
+- **Companion Planting**: Use marigolds, basil, and neem plants as natural repellents
+- **Organic Sprays**: Prepare neem oil, garlic, and soap-based solutions
+- **Physical Barriers**: Install row covers and sticky traps
+
+## Certification Process
+1. Contact local certification agency
+2. Submit application with farm details
+3. Undergo inspection process
+4. Maintain detailed records
+5. Receive organic certificate
+
+## Economic Benefits
+- Premium prices (20-30% higher than conventional)
+- Reduced input costs over time
+- Access to organic markets
+- Government subsidies and support
+
+## Challenges and Solutions
+- **Initial Yield Drop**: Expect 10-20% reduction in first 2-3 years
+- **Pest Management**: Requires more attention and diverse strategies
+- **Market Access**: Build relationships with organic buyers
+- **Certification Costs**: Government schemes provide financial support`,
+      fullContentHindi: `# ${selectedLocation} के लिए जैविक खेती की सर्वोत्तम प्रथाएं
+
+## परिचय
+${selectedLocation} में जैविक खेती तेजी से महत्वपूर्ण होती जा रही है क्योंकि किसान पारंपरिक कृषि के टिकाऊ विकल्प तलाश रहे हैं। यह व्यापक गाइड स्थानीय परिस्थितियों के लिए उपयुक्त जैविक खेती के सभी पहलुओं को कवर करती है।
+
+## मिट्टी स्वास्थ्य प्रबंधन
+- **कंपोस्टिंग**: खेत के कचरे, रसोई के स्क्रैप और हरी सामग्री का उपयोग करके पोषक तत्वों से भरपूर कंपोस्ट बनाएं
+- **फसल चक्र**: मिट्टी की उर्वरता बनाए रखने के लिए 3-4 साल के रोटेशन चक्र लागू करें
+- **कवर फसलें**: नाइट्रोजन को प्राकृतिक रूप से स्थिर करने के लिए दलहनी पौधों का उपयोग करें
+- **मल्चिंग**: नमी बनाए रखने और खरपतवार को दबाने के लिए जैविक मल्च लगाएं
+
+## प्राकृतिक कीट नियंत्रण
+- **लाभकारी कीड़े**: लेडीबग्स, लेसविंग्स और परजीवी ततैया को प्रोत्साहित करें
+- **साथी रोपण**: प्राकृतिक प्रतिकर्षक के रूप में गेंदा, तुलसी और नीम के पौधों का उपयोग करें
+- **जैविक स्प्रे**: नीम का तेल, लहसुन और साबुन आधारित समाधान तैयार करें
+- **भौतिक बाधाएं**: रो कवर और चिपचिपे जाल स्थापित करें
+
+## प्रमाणन प्रक्रिया
+1. स्थानीय प्रमाणन एजेंसी से संपर्क करें
+2. खेत के विवरण के साथ आवेदन जमा करें
+3. निरीक्षण प्रक्रिया से गुजरें
+4. विस्तृत रिकॉर्ड बनाए रखें
+5. जैविक प्रमाणपत्र प्राप्त करें
+
+## आर्थिक लाभ
+- प्रीमियम कीमतें (पारंपरिक से 20-30% अधिक)
+- समय के साथ कम इनपुट लागत
+- जैविक बाजारों तक पहुंच
+- सरकारी सब्सिडी और सहायता
+
+## चुनौतियां और समाधान
+- **प्रारंभिक उपज में गिरावट**: पहले 2-3 वर्षों में 10-20% कमी की अपेक्षा करें
+- **कीट प्रबंधन**: अधिक ध्यान और विविध रणनीतियों की आवश्यकता
+- **बाजार पहुंच**: जैविक खरीदारों के साथ संबंध बनाएं
+- **प्रमाणन लागत**: सरकारी योजनाएं वित्तीय सहायता प्रदान करती हैं`,
       readTime: 8,
       date: "2024-12-20",
       icon: BookOpen,
@@ -89,8 +174,92 @@ const KnowledgeHub = () => {
       title: "Integrated Pest Management",
       titleHindi: `${selectedLocation} में एकीकृत कीट प्रबंधन`,
       category: "Crop Protection",
-      content: `Effective strategies to control pests in ${selectedLocation} using biological, cultural, and chemical methods in harmony. Learn about beneficial insects, trap crops, pheromone traps, and selective pesticide application for sustainable pest control.`,
-      contentHindi: `जैविक, सांस्कृतिक और रासायनिक विधियों का सामंजस्यपूर्ण उपयोग करके ${selectedLocation} में कीटों को नियंत्रित करने की प्रभावी रणनीतियां। लाभकारी कीड़े, ट्रैप फसलें, फेरोमोन ट्रैप और टिकाऊ कीट नियंत्रण के लिए चुनिंदा कीटनाशक अनुप्रयोग के बारे में जानें।`,
+      content: `Effective strategies to control pests in ${selectedLocation} using biological, cultural, and chemical methods in harmony.`,
+      contentHindi: `जैविक, सांस्कृतिक और रासायनिक विधियों का सामंजस्यपूर्ण उपयोग करके ${selectedLocation} में कीटों को नियंत्रित करने की प्रभावी रणनीतियां।`,
+      fullContent: `# Integrated Pest Management (IPM) for ${selectedLocation}
+
+## Understanding IPM
+Integrated Pest Management is a holistic approach that combines multiple pest control strategies to manage pest populations effectively while minimizing environmental impact.
+
+## IPM Components
+
+### 1. Cultural Control
+- **Crop Rotation**: Break pest life cycles by rotating crops
+- **Sanitation**: Remove crop residues and weeds that harbor pests
+- **Timing**: Plant at optimal times to avoid peak pest periods
+- **Resistant Varieties**: Choose pest-resistant crop varieties
+
+### 2. Biological Control
+- **Natural Predators**: Encourage birds, spiders, and beneficial insects
+- **Parasitoids**: Release Trichogramma wasps for bollworm control
+- **Microbials**: Use Bacillus thuringiensis (Bt) for caterpillar control
+- **Botanical Pesticides**: Apply neem, pyrethrum, and rotenone
+
+### 3. Mechanical Control
+- **Traps**: Use pheromone traps, light traps, and sticky traps
+- **Barriers**: Install row covers and copper strips
+- **Hand Picking**: Remove large pests manually
+- **Cultivation**: Disrupt pest habitats through tillage
+
+### 4. Chemical Control (Last Resort)
+- **Selective Pesticides**: Use targeted chemicals that spare beneficial insects
+- **Rotation**: Alternate between different chemical classes
+- **Timing**: Apply at pest-vulnerable life stages
+- **Dosage**: Use minimum effective concentrations
+
+## Monitoring and Thresholds
+- **Regular Scouting**: Inspect crops weekly for pest presence
+- **Economic Thresholds**: Determine when pest levels justify treatment
+- **Weather Monitoring**: Track conditions favorable for pest outbreaks
+- **Record Keeping**: Maintain detailed pest management logs
+
+## IPM for Common Pests in ${selectedLocation}
+- **Aphids**: Use reflective mulches, release ladybugs, apply insecticidal soap
+- **Bollworm**: Deploy pheromone traps, release Trichogramma, use Bt sprays
+- **Whitefly**: Install yellow sticky traps, encourage natural enemies, use neem oil
+- **Thrips**: Use blue sticky traps, maintain field hygiene, apply predatory mites`,
+      fullContentHindi: `# ${selectedLocation} के लिए एकीकृत कीट प्रबंधन (IPM)
+
+## IPM को समझना
+एकीकृत कीट प्रबंधन एक समग्र दृष्टिकोण है जो पर्यावरणीय प्रभाव को कम करते हुए कीट आबादी को प्रभावी रूप से प्रबंधित करने के लिए कई कीट नियंत्रण रणनीतियों को जोड़ता है।
+
+## IPM घटक
+
+### 1. सांस्कृतिक नियंत्रण
+- **फसल चक्र**: फसलों को घुमाकर कीट जीवन चक्र को तोड़ें
+- **सफाई**: कीटों को आश्रय देने वाले फसल अवशेष और खरपतवार हटाएं
+- **समय**: कीट के चरम काल से बचने के लिए इष्टतम समय पर बुआई करें
+- **प्रतिरोधी किस्में**: कीट-प्रतिरोधी फसल किस्मों का चयन करें
+
+### 2. जैविक नियंत्रण
+- **प्राकृतिक शिकारी**: पक्षियों, मकड़ियों और लाभकारी कीड़ों को प्रोत्साहित करें
+- **परजीवी**: बॉलवर्म नियंत्रण के लिए ट्राइकोग्रामा ततैया छोड़ें
+- **माइक्रोबियल**: कैटरपिलर नियंत्रण के लिए बैसिलस थुरिंजिएंसिस (Bt) का उपयोग करें
+- **वनस्पति कीटनाशक**: नीम, पायरेथ्रम और रोटेनोन लगाएं
+
+### 3. यांत्रिक नियंत्रण
+- **जाल**: फेरोमोन ट्रैप, लाइट ट्रैप और चिपचिपे जाल का उपयोग करें
+- **बाधाएं**: रो कवर और कॉपर स्ट्रिप्स स्थापित करें
+- **हाथ से चुनना**: बड़े कीटों को मैन्युअल रूप से हटाएं
+- **खेती**: जुताई के माध्यम से कीट आवासों को बाधित करें
+
+### 4. रासायनिक नियंत्रण (अंतिम उपाय)
+- **चुनिंदा कीटनाशक**: लक्षित रसायनों का उपयोग करें जो लाभकारी कीड़ों को बख्शते हैं
+- **रोटेशन**: विभिन्न रासायनिक वर्गों के बीच बारी-बारी से उपयोग करें
+- **समय**: कीट-संवेदनशील जीवन चरणों में लागू करें
+- **खुराक**: न्यूनतम प्रभावी सांद्रता का उपयोग करें
+
+## निगरानी और सीमा
+- **नियमित स्काउटिंग**: कीट उपस्थिति के लिए साप्ताहिक फसल निरीक्षण
+- **आर्थिक सीमा**: निर्धारित करें कि कब कीट स्तर उपचार को उचित ठहराते हैं
+- **मौसम निगरानी**: कीट प्रकोप के लिए अनुकूल परिस्थितियों को ट्रैक करें
+- **रिकॉर्ड रखना**: विस्तृत कीट प्रबंधन लॉग बनाए रखें
+
+## ${selectedLocation} में सामान्य कीटों के लिए IPM
+- **एफिड्स**: परावर्तक मल्च का उपयोग करें, लेडीबग्स छोड़ें, कीटनाशक साबुन लगाएं
+- **बॉलवर्म**: फेरोमोन ट्रैप तैनात करें, ट्राइकोग्रामा छोड़ें, Bt स्प्रे का उपयोग करें
+- **व्हाइटफ्लाई**: पीले चिपचिपे जाल स्थापित करें, प्राकृतिक दुश्मनों को प्रोत्साहित करें, नीम का तेल उपयोग करें
+- **थ्रिप्स**: नीले चिपचिपे जाल का उपयोग करें, खेत की स्वच्छता बनाए रखें, शिकारी माइट्स लगाएं`,
       readTime: 12,
       date: "2024-12-18",
       icon: FileText,
@@ -105,8 +274,106 @@ const KnowledgeHub = () => {
       title: "Water Conservation Techniques",
       titleHindi: `${selectedLocation} में जल संरक्षण तकनीकें`,
       category: "Irrigation",
-      content: `Modern irrigation methods and water-saving techniques for efficient farming in ${selectedLocation}. Covers drip irrigation, sprinkler systems, rainwater harvesting, and smart irrigation scheduling based on soil moisture and weather data.`,
-      contentHindi: `${selectedLocation} में कुशल कृषि के लिए आधुनिक सिंचाई विधियां और जल-बचत तकनीकें। इसमें ड्रिप सिंचाई, स्प्रिंकलर सिस्टम, वर्षा जल संचयन, और मिट्टी की नमी और मौसम डेटा के आधार पर स्मार्ट सिंचाई शेड्यूलिंग शामिल है।`,
+      content: `Modern irrigation methods and water-saving techniques for efficient farming in ${selectedLocation}.`,
+      contentHindi: `${selectedLocation} में कुशल कृषि के लिए आधुनिक सिंचाई विधियां और जल-बचत तकनीकें।`,
+      fullContent: `# Water Conservation Techniques for ${selectedLocation}
+
+## Introduction
+Water scarcity is a growing concern in ${selectedLocation}. This guide provides practical solutions for efficient water use in agriculture.
+
+## Drip Irrigation System
+### Benefits
+- 30-50% water savings compared to flood irrigation
+- Reduced weed growth
+- Better nutrient uptake
+- Suitable for all crop types
+
+### Installation Steps
+1. **Planning**: Map your field and calculate water requirements
+2. **Components**: Main line, sub-main, laterals, emitters, filters
+3. **Installation**: Lay pipes according to crop spacing
+4. **Testing**: Check for leaks and uniform water distribution
+5. **Maintenance**: Regular cleaning and replacement of parts
+
+## Sprinkler Irrigation
+- **Portable Systems**: Easy to move between fields
+- **Fixed Systems**: Permanent installation for large areas
+- **Micro-sprinklers**: For closely spaced crops
+- **Impact Sprinklers**: For field crops and orchards
+
+## Rainwater Harvesting
+### Farm Ponds
+- Collect rainwater during monsoon
+- Store water for dry periods
+- Support fish farming as additional income
+- Recharge groundwater naturally
+
+### Roof Water Harvesting
+- Collect water from farm buildings
+- Store in tanks for irrigation
+- Filter for drinking water use
+- Reduce dependency on groundwater
+
+## Smart Irrigation Scheduling
+- **Soil Moisture Sensors**: Monitor soil water content
+- **Weather-based Scheduling**: Adjust irrigation based on rainfall forecast
+- **Crop Growth Stage**: Vary water application according to plant needs
+- **Evapotranspiration Data**: Use ET rates for precise scheduling
+
+## Water-Efficient Crops
+- **Drought-tolerant Varieties**: Choose crops adapted to local conditions
+- **Millets**: Require less water than rice and wheat
+- **Pulses**: Fix nitrogen and need moderate water
+- **Horticulture**: High-value crops with efficient water use`,
+      fullContentHindi: `# ${selectedLocation} के लिए जल संरक्षण तकनीकें
+
+## परिचय
+${selectedLocation} में पानी की कमी एक बढ़ती चिंता है। यह गाइड कृषि में कुशल पानी के उपयोग के लिए व्यावहारिक समाधान प्रदान करती है।
+
+## ड्रिप सिंचाई प्रणाली
+### लाभ
+- बाढ़ सिंचाई की तुलना में 30-50% पानी की बचत
+- खरपतवार की वृद्धि में कमी
+- बेहतर पोषक तत्व अवशोषण
+- सभी फसल प्रकारों के लिए उपयुक्त
+
+### स्थापना चरण
+1. **योजना**: अपने खेत का नक्शा बनाएं और पानी की आवश्यकताओं की गणना करें
+2. **घटक**: मुख्य लाइन, सब-मेन, लेटरल, एमिटर, फिल्टर
+3. **स्थापना**: फसल की दूरी के अनुसार पाइप बिछाएं
+4. **परीक्षण**: रिसाव और समान पानी वितरण की जांच करें
+5. **रखरखाव**: नियमित सफाई और भागों का प्रतिस्थापन
+
+## स्प्रिंकलर सिंचाई
+- **पोर्टेबल सिस्टम**: खेतों के बीच आसानी से स्थानांतरित करना
+- **फिक्स्ड सिस्टम**: बड़े क्षेत्रों के लिए स्थायी स्थापना
+- **माइक्रो-स्प्रिंकलर**: निकट दूरी की फसलों के लिए
+- **इम्पैक्ट स्प्रिंकलर**: खेत की फसलों और बागों के लिए
+
+## वर्षा जल संचयन
+### खेत तालाब
+- मानसून के दौरान वर्षा जल एकत्र करें
+- सूखे की अवधि के लिए पानी स्टोर करें
+- अतिरिक्त आय के रूप में मछली पालन का समर्थन करें
+- भूजल को प्राकृतिक रूप से रिचार्ज करें
+
+### छत जल संचयन
+- खेत की इमारतों से पानी एकत्र करें
+- सिंचाई के लिए टैंकों में स्टोर करें
+- पीने के पानी के उपयोग के लिए फिल्टर करें
+- भूजल पर निर्भरता कम करें
+
+## स्मार्ट सिंचाई शेड्यूलिंग
+- **मिट्टी नमी सेंसर**: मिट्टी के पानी की मात्रा की निगरानी करें
+- **मौसम-आधारित शेड्यूलिंग**: बारिश के पूर्वानुमान के आधार पर सिंचाई समायोजित करें
+- **फसल वृद्धि चरण**: पौधे की जरूरतों के अनुसार पानी का अनुप्रयोग बदलें
+- **वाष्पोत्सर्जन डेटा**: सटीक शेड्यूलिंग के लिए ET दरों का उपयोग करें
+
+## जल-कुशल फसलें
+- **सूखा-सहनशील किस्में**: स्थानीय परिस्थितियों के अनुकूल फसलों का चयन करें
+- **मिलेट्स**: चावल और गेहूं से कम पानी की आवश्यकता
+- **दालें**: नाइट्रोजन स्थिर करती हैं और मध्यम पानी की जरूरत
+- **बागवानी**: कुशल पानी के उपयोग के साथ उच्च मूल्य फसलें`,
       readTime: 10,
       date: "2024-12-15",
       icon: BookOpen,
@@ -115,54 +382,6 @@ const KnowledgeHub = () => {
       rating: 4.7,
       downloads: 1450,
       author: "Dr. Amit Patel"
-    },
-    {
-      id: 4,
-      title: "Soil Health Management",
-      titleHindi: `${selectedLocation} में मिट्टी स्वास्थ्य प्रबंधन`,
-      category: "Soil Science",
-      content: `Understanding soil composition, testing, and improvement strategies for better productivity in ${selectedLocation}. Learn about soil pH management, nutrient cycling, microbial health, and organic matter enhancement techniques.`,
-      contentHindi: `${selectedLocation} में बेहतर उत्पादकता के लिए मिट्टी की संरचना, परीक्षण और सुधार रणनीतियों को समझना। मिट्टी के pH प्रबंधन, पोषक तत्व चक्रण, माइक्रोबियल स्वास्थ्य और जैविक पदार्थ वृद्धि तकनीकों के बारे में जानें।`,
-      readTime: 15,
-      date: "2024-12-12",
-      icon: FileText,
-      tags: ["soil-health", "testing", "ph-management", "nutrients"],
-      difficulty: 'advanced',
-      rating: 4.9,
-      downloads: 2100,
-      author: "Dr. Priya Singh"
-    },
-    {
-      id: 5,
-      title: "Climate-Smart Agriculture",
-      titleHindi: `${selectedLocation} में जलवायु-स्मार्ट कृषि`,
-      category: "Climate Adaptation",
-      content: `Adapting farming practices to climate change in ${selectedLocation}. Covers drought-resistant crops, weather forecasting, carbon sequestration, and sustainable farming practices for climate resilience.`,
-      contentHindi: `${selectedLocation} में जलवायु परिवर्तन के लिए कृषि प्रथाओं को अनुकूलित करना। इसमें सूखा प्रतिरोधी फसलें, मौसम पूर्वानुमान, कार्बन संग्रहण और जलवायु लचीलेपन के लिए टिकाऊ कृषि प्रथाएं शामिल हैं।`,
-      readTime: 11,
-      date: "2024-12-10",
-      icon: BookOpen,
-      tags: ["climate-change", "drought-resistant", "sustainability", "resilience"],
-      difficulty: 'intermediate',
-      rating: 4.5,
-      downloads: 890,
-      author: "Dr. Vikram Reddy"
-    },
-    {
-      id: 6,
-      title: "Digital Farming Tools",
-      titleHindi: `${selectedLocation} में डिजिटल कृषि उपकरण`,
-      category: "Technology",
-      content: `Introduction to modern farming technologies available in ${selectedLocation}. Learn about GPS-guided tractors, drone applications, IoT sensors, and mobile apps for farm management and monitoring.`,
-      contentHindi: `${selectedLocation} में उपलब्ध आधुनिक कृषि प्रौद्योगिकियों का परिचय। GPS-निर्देशित ट्रैक्टर, ड्रोन अनुप्रयोग, IoT सेंसर, और खेत प्रबंधन और निगरानी के लिए मोबाइल ऐप्स के बारे में जानें।`,
-      readTime: 9,
-      date: "2024-12-08",
-      icon: FileText,
-      tags: ["technology", "gps", "drones", "iot", "mobile-apps"],
-      difficulty: 'beginner',
-      rating: 4.4,
-      downloads: 1680,
-      author: "Eng. Ravi Kumar"
     }
   ];
 
@@ -182,7 +401,25 @@ const KnowledgeHub = () => {
       deadline: "Open throughout the year",
       budget: "₹75,000 crores annually",
       ministry: "Ministry of Agriculture & Farmers Welfare",
-      status: 'active'
+      status: 'active',
+      documents: ["Aadhaar Card", "Bank Account Details", "Land Records", "Mobile Number"],
+      documentsHindi: ["आधार कार्ड", "बैंक खाता विवरण", "भूमि रिकॉर्ड", "मोबाइल नंबर"],
+      applicationSteps: [
+        "Visit pmkisan.gov.in website",
+        "Click on 'New Farmer Registration'",
+        "Fill personal and bank details",
+        "Upload required documents",
+        "Submit application",
+        "Note registration number for tracking"
+      ],
+      applicationStepsHindi: [
+        "pmkisan.gov.in वेबसाइट पर जाएं",
+        "'नया किसान पंजीकरण' पर क्लिक करें",
+        "व्यक्तिगत और बैंक विवरण भरें",
+        "आवश्यक दस्तावेज अपलोड करें",
+        "आवेदन जमा करें",
+        "ट्रैकिंग के लिए पंजीकरण संख्या नोट करें"
+      ]
     },
     {
       id: 2,
@@ -199,58 +436,25 @@ const KnowledgeHub = () => {
       deadline: "Varies by crop and season",
       budget: "₹15,695 crores for 2024-25",
       ministry: "Ministry of Agriculture & Farmers Welfare",
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: "Soil Health Card Scheme",
-      nameHindi: "मृदा स्वास्थ्य कार्ड योजना",
-      description: "Free soil testing and nutrient-based fertilizer recommendations to improve soil health and crop productivity",
-      descriptionHindi: "मिट्टी के स्वास्थ्य और फसल उत्पादकता में सुधार के लिए मुफ्त मिट्टी परीक्षण और पोषक तत्व-आधारित उर्वरक सिफारिशें",
-      eligibility: ["All farmers with agricultural land", "Valid land records", "Soil samples from registered fields", "Aadhaar card for identification"],
-      eligibilityHindi: ["कृषि भूमि वाले सभी किसान", "वैध भूमि रिकॉर्ड", "पंजीकृत खेतों से मिट्टी के नमूने", "पहचान के लिए आधार कार्ड"],
-      benefits: ["Free soil testing every 3 years", "Customized fertilizer recommendations", "Improved crop productivity", "Reduced input costs"],
-      benefitsHindi: ["हर 3 साल में मुफ्त मिट्टी परीक्षण", "अनुकूलित उर्वरक सिफारिशें", "बेहतर फसल उत्पादकता", "कम इनपुट लागत"],
-      application: `Contact local agriculture department in ${selectedLocation} or soil testing labs`,
-      applicationHindi: `${selectedLocation} में स्थानीय कृषि विभाग या मिट्टी परीक्षण प्रयोगशालाओं से संपर्क करें`,
-      deadline: "Ongoing program",
-      budget: "₹568 crores",
-      ministry: "Ministry of Agriculture & Farmers Welfare",
-      status: 'active'
-    },
-    {
-      id: 4,
-      name: "Kisan Credit Card",
-      nameHindi: "किसान क्रेडिट कार्ड",
-      description: "Flexible credit facility for farmers to meet their agricultural and allied activities financing needs",
-      descriptionHindi: "किसानों के लिए उनकी कृषि और संबद्ध गतिविधियों की वित्तपोषण आवश्यकताओं को पूरा करने के लिए लचीली ऋण सुविधा",
-      eligibility: ["Farmers with cultivable land", "Tenant farmers with valid agreements", "Self Help Group members", "Joint Liability Group members"],
-      eligibilityHindi: ["खेती योग्य भूमि वाले किसान", "वैध समझौते वाले किरायेदार किसान", "स्वयं सहायता समूह के सदस्य", "संयुक्त देयता समूह के सदस्य"],
-      benefits: ["Credit limit up to ₹3 lakhs", "Flexible repayment", "Crop insurance coverage", "Low interest rates (7% per annum)"],
-      benefitsHindi: ["₹3 लाख तक की क्रेडिट सीमा", "लचीली चुकौती", "फसल बीमा कवरेज", "कम ब्याज दरें (7% प्रति वर्ष)"],
-      application: `Visit any bank branch in ${selectedLocation} with required documents`,
-      applicationHindi: `आवश्यक दस्तावेजों के साथ ${selectedLocation} में किसी भी बैंक शाखा में जाएं`,
-      deadline: "Available year-round",
-      budget: "₹1,75,000 crores credit target",
-      ministry: "Ministry of Agriculture & Farmers Welfare",
-      status: 'active'
-    },
-    {
-      id: 5,
-      name: "National Mission for Sustainable Agriculture",
-      nameHindi: "सतत कृषि के लिए राष्ट्रीय मिशन",
-      description: "Promoting sustainable agriculture practices through climate-resilient technologies and water conservation",
-      descriptionHindi: "जलवायु-लचीली प्रौद्योगिकियों और जल संरक्षण के माध्यम से टिकाऊ कृषि प्रथाओं को बढ़ावा देना",
-      eligibility: ["Farmers in identified districts", "Farmer Producer Organizations", "Self Help Groups", "Agricultural cooperatives"],
-      eligibilityHindi: ["पहचाने गए जिलों में किसान", "किसान उत्पादक संगठन", "स्वयं सहायता समूह", "कृषि सहकारी समितियां"],
-      benefits: ["50-75% subsidy on equipment", "Training and capacity building", "Technology demonstration", "Market linkage support"],
-      benefitsHindi: ["उपकरणों पर 50-75% सब्सिडी", "प्रशिक्षण और क्षमता निर्माण", "प्रौद्योगिकी प्रदर्शन", "बाजार संपर्क सहायता"],
-      application: `Through state agriculture departments in ${selectedLocation}`,
-      applicationHindi: `${selectedLocation} में राज्य कृषि विभागों के माध्यम से`,
-      deadline: "March 31, 2025",
-      budget: "₹3,980 crores for 2024-25",
-      ministry: "Ministry of Agriculture & Farmers Welfare",
-      status: 'active'
+      status: 'active',
+      documents: ["Aadhaar Card", "Land Records", "Bank Account Details", "Sowing Certificate"],
+      documentsHindi: ["आधार कार्ड", "भूमि रिकॉर्ड", "बैंक खाता विवरण", "बुआई प्रमाणपत्र"],
+      applicationSteps: [
+        "Visit your bank or CSC center",
+        "Fill crop insurance application form",
+        "Submit required documents",
+        "Pay farmer's share of premium",
+        "Receive insurance policy document",
+        "Keep policy number for claims"
+      ],
+      applicationStepsHindi: [
+        "अपने बैंक या CSC केंद्र पर जाएं",
+        "फसल बीमा आवेदन फॉर्म भरें",
+        "आवश्यक दस्तावेज जमा करें",
+        "प्रीमियम का किसान हिस्सा भुगतान करें",
+        "बीमा पॉलिसी दस्तावेज प्राप्त करें",
+        "दावों के लिए पॉलिसी नंबर रखें"
+      ]
     }
   ];
 
@@ -266,20 +470,38 @@ const KnowledgeHub = () => {
       category: "Irrigation",
       videoUrl: "https://example.com/drip-irrigation-tutorial",
       steps: [
-        "Plan your irrigation layout",
-        "Calculate water requirements",
-        "Install main supply line",
-        "Set up drip emitters",
-        "Test the system",
-        "Schedule irrigation timing"
+        "Plan your irrigation layout based on crop spacing",
+        "Calculate water requirements for your crops",
+        "Install main supply line from water source",
+        "Set up sub-main lines and laterals",
+        "Install drip emitters at plant locations",
+        "Test the system for uniform water distribution",
+        "Schedule irrigation timing based on crop needs",
+        "Maintain system with regular cleaning"
       ],
       stepsHindi: [
-        "अपने सिंचाई लेआउट की योजना बनाएं",
-        "पानी की आवश्यकताओं की गणना करें",
-        "मुख्य आपूर्ति लाइन स्थापित करें",
-        "ड्रिप एमिटर सेट करें",
-        "सिस्टम का परीक्षण करें",
-        "सिंचाई समय निर्धारित करें"
+        "फसल की दूरी के आधार पर अपने सिंचाई लेआउट की योजना बनाएं",
+        "अपनी फसलों के लिए पानी की आवश्यकताओं की गणना करें",
+        "पानी के स्रोत से मुख्य आपूर्ति लाइन स्थापित करें",
+        "सब-मेन लाइन और लेटरल सेट करें",
+        "पौधे के स्थानों पर ड्रिप एमिटर स्थापित करें",
+        "समान पानी वितरण के लिए सिस्टम का परीक्षण करें",
+        "फसल की जरूरतों के आधार पर सिंचाई समय निर्धारित करें",
+        "नियमित सफाई के साथ सिस्टम बनाए रखें"
+      ],
+      materials: ["PVC pipes", "Drip emitters", "Filters", "Pressure regulators", "Connectors", "Timer system"],
+      materialsHindi: ["PVC पाइप", "ड्रिप एमिटर", "फिल्टर", "प्रेशर रेगुलेटर", "कनेक्टर", "टाइमर सिस्टम"],
+      tips: [
+        "Start with a small area to test the system",
+        "Use pressure compensating emitters for uniform flow",
+        "Install filters to prevent clogging",
+        "Schedule irrigation during early morning or evening"
+      ],
+      tipsHindi: [
+        "सिस्टम का परीक्षण करने के लिए छोटे क्षेत्र से शुरू करें",
+        "समान प्रवाह के लिए प्रेशर कंपेंसेटिंग एमिटर का उपयोग करें",
+        "रुकावट को रोकने के लिए फिल्टर स्थापित करें",
+        "सुबह जल्दी या शाम के दौरान सिंचाई शेड्यूल करें"
       ]
     },
     {
@@ -293,47 +515,38 @@ const KnowledgeHub = () => {
       category: "Organic Farming",
       videoUrl: "https://example.com/composting-tutorial",
       steps: [
-        "Collect organic waste materials",
-        "Create compost pile layers",
-        "Maintain proper moisture",
-        "Turn the pile regularly",
-        "Monitor temperature",
-        "Harvest finished compost"
+        "Collect organic waste materials (green and brown)",
+        "Create compost pile with proper layering",
+        "Maintain proper moisture (50-60%)",
+        "Turn the pile every 2-3 weeks",
+        "Monitor temperature (130-160°F)",
+        "Add beneficial microorganisms",
+        "Harvest finished compost after 3-6 months",
+        "Screen and store compost properly"
       ],
       stepsHindi: [
-        "जैविक अपशिष्ट सामग्री एकत्र करें",
-        "कंपोस्ट ढेर की परतें बनाएं",
-        "उचित नमी बनाए रखें",
-        "नियमित रूप से ढेर को पलटें",
-        "तापमान की निगरानी करें",
-        "तैयार कंपोस्ट की कटाई करें"
-      ]
-    },
-    {
-      id: 3,
-      title: "Integrated Pest Management Implementation",
-      titleHindi: "एकीकृत कीट प्रबंधन कार्यान्वयन",
-      description: "Comprehensive approach to pest control using multiple strategies",
-      descriptionHindi: "कई रणनीतियों का उपयोग करके कीट नियंत्रण के लिए व्यापक दृष्टिकोण",
-      duration: "35 minutes",
-      level: 'advanced',
-      category: "Crop Protection",
-      videoUrl: "https://example.com/ipm-tutorial",
-      steps: [
-        "Identify pest problems",
-        "Monitor pest populations",
-        "Implement cultural controls",
-        "Use biological controls",
-        "Apply chemical controls if needed",
-        "Evaluate effectiveness"
+        "जैविक अपशिष्ट सामग्री एकत्र करें (हरी और भूरी)",
+        "उचित परतों के साथ कंपोस्ट ढेर बनाएं",
+        "उचित नमी बनाए रखें (50-60%)",
+        "हर 2-3 सप्ताह में ढेर को पलटें",
+        "तापमान की निगरानी करें (130-160°F)",
+        "लाभकारी सूक्ष्मजीव जोड़ें",
+        "3-6 महीने बाद तैयार कंपोस्ट की कटाई करें",
+        "कंपोस्ट को ठीक से छानें और स्टोर करें"
       ],
-      stepsHindi: [
-        "कीट समस्याओं की पहचान करें",
-        "कीट आबादी की निगरानी करें",
-        "सांस्कृतिक नियंत्रण लागू करें",
-        "जैविक नियंत्रण का उपयोग करें",
-        "आवश्यकता पड़ने पर रासायनिक नियंत्रण लागू करें",
-        "प्रभावशीलता का मूल्यांकन करें"
+      materials: ["Organic waste", "Compost bin or area", "Thermometer", "Pitchfork", "Water source", "Beneficial microbes"],
+      materialsHindi: ["जैविक कचरा", "कंपोस्ट बिन या क्षेत्र", "थर्मामीटर", "पिचफोर्क", "पानी का स्रोत", "लाभकारी सूक्ष्मजीव"],
+      tips: [
+        "Maintain 3:1 ratio of brown to green materials",
+        "Keep compost pile moist but not waterlogged",
+        "Turn regularly for proper aeration",
+        "Add earthworms to speed up decomposition"
+      ],
+      tipsHindi: [
+        "भूरी से हरी सामग्री का 3:1 अनुपात बनाए रखें",
+        "कंपोस्ट ढेर को नम रखें लेकिन जलभराव न करें",
+        "उचित वायु संचार के लिए नियमित रूप से पलटें",
+        "अपघटन को तेज करने के लिए केंचुए जोड़ें"
       ]
     }
   ];
@@ -373,24 +586,15 @@ const KnowledgeHub = () => {
   });
 
   const openArticle = (article: Article) => {
-    toast({
-      title: language === 'hi' ? "लेख खोला जा रहा है" : "Opening Article",
-      description: language === 'hi' ? `पढ़ रहे हैं: ${article.titleHindi}` : `Reading: ${article.title}`
-    });
+    setSelectedArticle(article);
   };
 
   const applyScheme = (scheme: Scheme) => {
-    toast({
-      title: language === 'hi' ? "आवेदन जानकारी" : "Application Info",
-      description: language === 'hi' ? `आवेदन प्रक्रिया: ${scheme.applicationHindi}` : `Application process: ${scheme.application}`
-    });
+    setSelectedScheme(scheme);
   };
 
   const watchTutorial = (tutorial: Tutorial) => {
-    toast({
-      title: language === 'hi' ? "ट्यूटोरियल शुरू हो रहा है" : "Starting Tutorial",
-      description: language === 'hi' ? `देख रहे हैं: ${tutorial.titleHindi}` : `Watching: ${tutorial.title}`
-    });
+    setSelectedTutorial(tutorial);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -572,7 +776,7 @@ const KnowledgeHub = () => {
                 <TabsContent value="schemes" className="mt-6">
                   <div className="space-y-4">
                     {filteredSchemes.map((scheme) => (
-                      <Card key={scheme.id} className="shadow-card">
+                      <Card key={scheme.id} className="shadow-card hover:shadow-feature transition-shadow cursor-pointer" onClick={() => applyScheme(scheme)}>
                         <CardContent className="p-6">
                           <div className="flex items-start space-x-4">
                             <div className="p-3 bg-accent/20 rounded-lg">
@@ -596,9 +800,9 @@ const KnowledgeHub = () => {
                                     </span>
                                   </div>
                                 </div>
-                                <Button onClick={() => applyScheme(scheme)} variant="default" size="sm">
+                                <Button variant="default" size="sm">
                                   <ExternalLink className="w-4 h-4 mr-2" />
-                                  {language === 'hi' ? 'आवेदन करें' : 'Apply'}
+                                  {language === 'hi' ? 'विवरण देखें' : 'View Details'}
                                 </Button>
                               </div>
 
@@ -608,9 +812,9 @@ const KnowledgeHub = () => {
                                     {language === 'hi' ? 'पात्रता:' : 'Eligibility:'}
                                   </h4>
                                   <ul className="space-y-1">
-                                    {(language === 'hi' ? scheme.eligibilityHindi : scheme.eligibility).map((item, index) => (
+                                    {(language === 'hi' ? scheme.eligibilityHindi : scheme.eligibility).slice(0, 3).map((item, index) => (
                                       <li key={index} className="text-xs text-foreground flex items-start">
-                                        <div className="w-1 h-1 bg-nature-medium rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                                        <CheckCircle className="w-3 h-3 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
                                         {item}
                                       </li>
                                     ))}
@@ -621,9 +825,9 @@ const KnowledgeHub = () => {
                                     {language === 'hi' ? 'लाभ:' : 'Benefits:'}
                                   </h4>
                                   <ul className="space-y-1">
-                                    {(language === 'hi' ? scheme.benefitsHindi : scheme.benefits).map((item, index) => (
+                                    {(language === 'hi' ? scheme.benefitsHindi : scheme.benefits).slice(0, 3).map((item, index) => (
                                       <li key={index} className="text-xs text-foreground flex items-start">
-                                        <div className="w-1 h-1 bg-accent rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                                        <Star className="w-3 h-3 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
                                         {item}
                                       </li>
                                     ))}
@@ -660,7 +864,7 @@ const KnowledgeHub = () => {
                         <CardContent className="p-6">
                           <div className="flex items-start space-x-4">
                             <div className="p-3 bg-blue-100 rounded-lg">
-                              <BookOpen className="w-6 h-6 text-blue-600" />
+                              <Play className="w-6 h-6 text-blue-600" />
                             </div>
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-3">
@@ -688,7 +892,7 @@ const KnowledgeHub = () => {
                                   </div>
                                 </div>
                                 <Button variant="default" size="sm">
-                                  <BookOpen className="w-4 h-4 mr-2" />
+                                  <Play className="w-4 h-4 mr-2" />
                                   {language === 'hi' ? 'देखें' : 'Watch'}
                                 </Button>
                               </div>
@@ -748,6 +952,278 @@ const KnowledgeHub = () => {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Article Detail Modal */}
+        <Dialog open={!!selectedArticle} onOpenChange={() => setSelectedArticle(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-primary" />
+                {selectedArticle && (language === 'hi' ? selectedArticle.titleHindi : selectedArticle.title)}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {selectedArticle && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Badge variant="secondary">{selectedArticle.category}</Badge>
+                    <Badge className={getDifficultyColor(selectedArticle.difficulty)}>
+                      {language === 'hi' ? 
+                        (selectedArticle.difficulty === 'beginner' ? 'शुरुआती' : 
+                         selectedArticle.difficulty === 'intermediate' ? 'मध्यम' : 'उन्नत') 
+                        : selectedArticle.difficulty}
+                    </Badge>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {selectedArticle.readTime} min read
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Star className="w-4 h-4 mr-1 text-yellow-500" />
+                      {selectedArticle.rating}
+                    </div>
+                  </div>
+                  
+                  <div className="prose prose-sm max-w-none">
+                    <div className="whitespace-pre-wrap">
+                      {language === 'hi' ? selectedArticle.fullContentHindi : selectedArticle.fullContent}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">{selectedArticle.author}</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-2" />
+                        {language === 'hi' ? 'डाउनलोड' : 'Download'}
+                      </Button>
+                      <Button variant="default" size="sm">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        {language === 'hi' ? 'साझा करें' : 'Share'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* Scheme Detail Modal */}
+        <Dialog open={!!selectedScheme} onOpenChange={() => setSelectedScheme(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <Award className="w-5 h-5 mr-2 text-accent" />
+                {selectedScheme && (language === 'hi' ? selectedScheme.nameHindi : selectedScheme.name)}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {selectedScheme && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getStatusColor(selectedScheme.status)}>
+                      {selectedScheme.status.toUpperCase()}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {language === 'hi' ? 'बजट:' : 'Budget:'} {selectedScheme.budget}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">
+                      {language === 'hi' ? 'योजना विवरण' : 'Scheme Description'}
+                    </h3>
+                    <p className="text-foreground">
+                      {language === 'hi' ? selectedScheme.descriptionHindi : selectedScheme.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold text-nature-dark mb-3 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        {language === 'hi' ? 'पात्रता मानदंड' : 'Eligibility Criteria'}
+                      </h4>
+                      <ul className="space-y-2">
+                        {(language === 'hi' ? selectedScheme.eligibilityHindi : selectedScheme.eligibility).map((item, index) => (
+                          <li key={index} className="text-sm text-foreground flex items-start">
+                            <div className="w-2 h-2 bg-nature-medium rounded-full mr-3 mt-2 flex-shrink-0"></div>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-accent mb-3 flex items-center">
+                        <Star className="w-4 h-4 mr-2" />
+                        {language === 'hi' ? 'योजना के लाभ' : 'Scheme Benefits'}
+                      </h4>
+                      <ul className="space-y-2">
+                        {(language === 'hi' ? selectedScheme.benefitsHindi : selectedScheme.benefits).map((item, index) => (
+                          <li key={index} className="text-sm text-foreground flex items-start">
+                            <div className="w-2 h-2 bg-accent rounded-full mr-3 mt-2 flex-shrink-0"></div>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary mb-3 flex items-center">
+                      <FileText className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'आवश्यक दस्तावेज' : 'Required Documents'}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {(language === 'hi' ? selectedScheme.documentsHindi : selectedScheme.documents).map((doc, index) => (
+                        <div key={index} className="p-2 bg-muted rounded-lg text-center">
+                          <FileText className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                          <span className="text-xs">{doc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary mb-3 flex items-center">
+                      <Info className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'आवेदन प्रक्रिया' : 'Application Process'}
+                    </h4>
+                    <div className="space-y-3">
+                      {(language === 'hi' ? selectedScheme.applicationStepsHindi : selectedScheme.applicationSteps).map((step, index) => (
+                        <div key={index} className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          <p className="text-sm text-foreground flex-1">{step}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-accent/10 p-4 rounded-lg">
+                    <h4 className="font-semibold text-accent mb-2">
+                      {language === 'hi' ? 'आवेदन कैसे करें' : 'How to Apply'}
+                    </h4>
+                    <p className="text-sm text-foreground">
+                      {language === 'hi' ? selectedScheme.applicationHindi : selectedScheme.application}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      {language === 'hi' ? 'समय सीमा:' : 'Deadline:'} {selectedScheme.deadline}
+                    </div>
+                    <Button variant="default">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'अभी आवेदन करें' : 'Apply Now'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tutorial Detail Modal */}
+        <Dialog open={!!selectedTutorial} onOpenChange={() => setSelectedTutorial(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <Play className="w-5 h-5 mr-2 text-blue-600" />
+                {selectedTutorial && (language === 'hi' ? selectedTutorial.titleHindi : selectedTutorial.title)}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {selectedTutorial && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary">{selectedTutorial.category}</Badge>
+                    <Badge className={getDifficultyColor(selectedTutorial.level)}>
+                      {language === 'hi' ? 
+                        (selectedTutorial.level === 'beginner' ? 'शुरुआती' : 
+                         selectedTutorial.level === 'intermediate' ? 'मध्यम' : 'उन्नत') 
+                        : selectedTutorial.level}
+                    </Badge>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {selectedTutorial.duration}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">
+                      {language === 'hi' ? 'विवरण' : 'Description'}
+                    </h3>
+                    <p className="text-foreground">
+                      {language === 'hi' ? selectedTutorial.descriptionHindi : selectedTutorial.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary mb-3 flex items-center">
+                      <FileText className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'आवश्यक सामग्री' : 'Required Materials'}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {(language === 'hi' ? selectedTutorial.materialsHindi : selectedTutorial.materials).map((material, index) => (
+                        <div key={index} className="p-2 bg-muted rounded-lg text-center">
+                          <span className="text-sm">{material}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary mb-3 flex items-center">
+                      <Info className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'चरणबद्ध निर्देश' : 'Step-by-Step Instructions'}
+                    </h4>
+                    <div className="space-y-3">
+                      {(language === 'hi' ? selectedTutorial.stepsHindi : selectedTutorial.steps).map((step, index) => (
+                        <div key={index} className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          <p className="text-sm text-foreground flex-1">{step}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'उपयोगी सुझाव' : 'Helpful Tips'}
+                    </h4>
+                    <ul className="space-y-1">
+                      {(language === 'hi' ? selectedTutorial.tipsHindi : selectedTutorial.tips).map((tip, index) => (
+                        <li key={index} className="text-sm text-blue-800 flex items-start">
+                          <div className="w-1 h-1 bg-blue-600 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      {language === 'hi' ? 'अवधि:' : 'Duration:'} {selectedTutorial.duration}
+                    </div>
+                    <Button variant="default">
+                      <Play className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'वीडियो देखें' : 'Watch Video'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );

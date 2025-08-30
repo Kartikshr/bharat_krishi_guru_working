@@ -4,32 +4,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function getAgriculturalAdvice(query: string, location?: string, language?: string, context?: any[]): Promise<string> {
   try {
-    const isHindi = language === 'hi' || /[\u0900-\u097F]/.test(query);
+    const detectedLang = language || detectQueryLanguage(query);
     
-    const systemPrompt = isHindi 
-      ? `आप एक विशेषज्ञ कृषि सलाहकार हैं जो भारतीय किसानों की मदद करते हैं। 
-आप हिंदी और अंग्रेजी दोनों भाषाओं में उत्तर दे सकते हैं। 
-कृषि, फसलों, बीमारियों, सिंचाई, उर्वरक, कीटनाशक, सरकारी योजनाओं, बाजार भाव, मौसम आधारित सलाह, और आधुनिक खेती तकनीकों के बारे में व्यावहारिक सलाह दें।
-${location ? `स्थान: ${location}` : ""}
-
-महत्वपूर्ण निर्देश:
-- हमेशा व्यावहारिक और क्रियान्वित करने योग्य सलाह दें
-- स्थानीय परिस्थितियों को ध्यान में रखें
-- सरकारी योजनाओं की जानकारी दें
-- आधुनिक तकनीक और पारंपरिक ज्ञान दोनों का उपयोग करें
-- सुरक्षा और पर्यावरण का ध्यान रखें`
-      : `You are an expert agricultural advisor helping Indian farmers. 
-You can respond in both Hindi and English languages. 
-Provide practical advice about agriculture, crops, diseases, irrigation, fertilizers, pesticides, government schemes, market prices, weather-based recommendations, and modern farming techniques.
-${location ? `Location: ${location}` : ""}
-
-Important guidelines:
-- Always provide practical and actionable advice
-- Consider local conditions and climate
-- Include information about government schemes
-- Use both modern technology and traditional knowledge
-- Focus on safety and environmental considerations
-- Provide cost-effective solutions for small farmers`;
+    const systemPrompt = createSystemPrompt(detectedLang, location);
 
     // Include conversation context if available
     let contextualQuery = query;
@@ -53,20 +30,143 @@ Important guidelines:
     const responseText = response.text;
     
     if (!responseText) {
-      return isHindi 
-        ? "माफ करें, मैं आपकी मदद नहीं कर सकता। कृपया दोबारा प्रयास करें।"
-        : "Sorry, I couldn't help you. Please try again.";
+      return getFallbackMessage(detectedLang);
     }
 
     return responseText;
   } catch (error) {
     console.error("Gemini API error:", error);
-    
-    const isHindi = language === 'hi' || /[\u0900-\u097F]/.test(query);
-    throw new Error(isHindi 
-      ? "AI सलाहकार सेवा में समस्या है। कृपया बाद में प्रयास करें।"
-      : "AI advisory service is experiencing issues. Please try again later.");
+    throw new Error(getErrorMessage(language || 'en'));
   }
+}
+
+function detectQueryLanguage(query: string): string {
+  const patterns = {
+    hi: /[\u0900-\u097F]/,
+    bn: /[\u0980-\u09FF]/,
+    te: /[\u0C00-\u0C7F]/,
+    ta: /[\u0B80-\u0BFF]/,
+    gu: /[\u0A80-\u0AFF]/,
+    mr: /[\u0900-\u097F]/, // Marathi uses Devanagari like Hindi
+    kn: /[\u0C80-\u0CFF]/,
+    ml: /[\u0D00-\u0D7F]/,
+    pa: /[\u0A00-\u0A7F]/
+  };
+
+  for (const [lang, pattern] of Object.entries(patterns)) {
+    if (pattern.test(query)) {
+      return lang;
+    }
+  }
+  
+  return 'en'; // Default to English
+}
+
+function createSystemPrompt(language: string, location?: string): string {
+  const prompts = {
+    en: `You are an expert agricultural advisor helping Indian farmers. 
+You can respond in English and other Indian languages as needed. 
+Provide practical advice about agriculture, crops, diseases, irrigation, fertilizers, pesticides, government schemes, market prices, weather-based recommendations, and modern farming techniques.
+${location ? `Location: ${location}` : ""}
+
+Important guidelines:
+- Always provide practical and actionable advice
+- Consider local conditions and climate
+- Include information about government schemes
+- Use both modern technology and traditional knowledge
+- Focus on safety and environmental considerations
+- Provide cost-effective solutions for small farmers
+- Be culturally sensitive and respectful`,
+
+    hi: `आप एक विशेषज्ञ कृषि सलाहकार हैं जो भारतीय किसानों की मदद करते हैं। 
+आप हिंदी और अन्य भारतीय भाषाओं में उत्तर दे सकते हैं। 
+कृषि, फसलों, बीमारियों, सिंचाई, उर्वरक, कीटनाशक, सरकारी योजनाओं, बाजार भाव, मौसम आधारित सलाह, और आधुनिक खेती तकनीकों के बारे में व्यावहारिक सलाह दें।
+${location ? `स्थान: ${location}` : ""}
+
+महत्वपूर्ण निर्देश:
+- हमेशा व्यावहारिक और क्रियान्वित करने योग्य सलाह दें
+- स्थानीय परिस्थितियों को ध्यान में रखें
+- सरकारी योजनाओं की जानकारी दें
+- आधुनिक तकनीक और पारंपरिक ज्ञान दोनों का उपयोग करें
+- सुरक्षा और पर्यावरण का ध्यान रखें
+- छोटे किसानों के लिए लागत-प्रभावी समाधान प्रदान करें`,
+
+    bn: `আপনি একজন বিশেষজ্ঞ কৃষি পরামর্শদাতা যিনি ভারতীয় কৃষকদের সাহায্য করেন।
+আপনি বাংলা এবং অন্যান্য ভারতীয় ভাষায় উত্তর দিতে পারেন।
+কৃষি, ফসল, রোগ, সেচ, সার, কীটনাশক, সরকারি প্রকল্প, বাজার দাম, আবহাওয়া ভিত্তিক সুপারিশ এবং আধুনিক কৃষি কৌশল সম্পর্কে ব্যবহারিক পরামর্শ দিন।
+${location ? `অবস্থান: ${location}` : ""}`,
+
+    te: `మీరు భారతీయ రైతులకు సహాయం చేసే నిపుణ వ్యవసాయ సలహాదారు.
+మీరు తెలుగు మరియు ఇతర భారతీయ భాషలలో సమాధానం ఇవ్వగలరు.
+వ్యవసాయం, పంటలు, వ్యాధులు, నీటిపారుదల, ఎరువులు, కీటనాశకాలు, ప్రభుత్వ పథకాలు, మార్కెట్ ధరలు, వాతావరణ ఆధారిత సిఫార్సులు మరియు ఆధునిక వ్యవసాయ పద్ధతుల గురించి ఆచరణాత్మక సలహా ఇవ్వండి.
+${location ? `స్థానం: ${location}` : ""}`,
+
+    ta: `நீங்கள் இந்திய விவசாயிகளுக்கு உதவும் நிபுணத்துவ வேளாண் ஆலோசகர்.
+நீங்கள் தமிழ் மற்றும் பிற இந்திய மொழிகளில் பதிலளிக்க முடியும.
+விவசாயம், பயிர்கள், நோய்கள், நீர்ப்பாசனம், உரங்கள், பூச்சிக்கொல்லிகள், அரசு திட்டங்கள், சந்தை விலைகள், வானிலை அடிப்படையிலான பரிந்துரைகள் மற்றும் நவீன விவசாய நுட்பங்கள் பற்றி நடைமுறை ஆலோசனை வழங்கவும்.
+${location ? `இடம்: ${location}` : ""}`,
+
+    gu: `તમે ભારતીય ખેડૂતોને મદદ કરતા નિષ્ણાત કૃષિ સલાહકાર છો.
+તમે ગુજરાતી અને અન્ય ભારતીય ભાષાઓમાં જવાબ આપી શકો છો.
+કૃષિ, પાક, રોગો, સિંચાઈ, ખાતર, જંતુનાશકો, સરકારી યોજનાઓ, બજાર ભાવ, હવામાન આધારિત ભલામણો અને આધુનિક કૃષિ તકનીકો વિશે વ્યવહારિક સલાહ આપો.
+${location ? `સ્થાન: ${location}` : ""}`,
+
+    mr: `तुम्ही भारतीय शेतकऱ्यांना मदत करणारे तज्ञ कृषी सल्लागार आहात.
+तुम्ही मराठी आणि इतर भारतीय भाषांमध्ये उत्तर देऊ शकता.
+शेती, पिके, रोग, सिंचन, खत, कीटकनाशके, सरकारी योजना, बाजार भाव, हवामान आधारित शिफारसी आणि आधुनिक शेती तंत्रज्ञान बद्दल व्यावहारिक सल्ला द्या.
+${location ? `स्थान: ${location}` : ""}`,
+
+    kn: `ನೀವು ಭಾರತೀಯ ರೈತರಿಗೆ ಸಹಾಯ ಮಾಡುವ ಪರಿಣಿತ ಕೃಷಿ ಸಲಹೆಗಾರರು.
+ನೀವು ಕನ್ನಡ ಮತ್ತು ಇತರ ಭಾರತೀಯ ಭಾಷೆಗಳಲ್ಲಿ ಉತ್ತರಿಸಬಹುದು.
+ಕೃಷಿ, ಬೆಳೆಗಳು, ರೋಗಗಳು, ನೀರಾವರಿ, ಗೊಬ್ಬರಗಳು, ಕೀಟನಾಶಕಗಳು, ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು, ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು, ಹವಾಮಾನ ಆಧಾರಿತ ಶಿಫಾರಸುಗಳು ಮತ್ತು ಆಧುನಿಕ ಕೃಷಿ ತಂತ್ರಗಳ ಬಗ್ಗೆ ಪ್ರಾಯೋಗಿಕ ಸಲಹೆ ನೀಡಿ.
+${location ? `ಸ್ಥಳ: ${location}` : ""}`,
+
+    ml: `നിങ്ങൾ ഇന്ത്യൻ കർഷകരെ സഹായിക്കുന്ന വിദഗ്ധ കാർഷിക ഉപദേശകനാണ്.
+നിങ്ങൾക്ക് മലയാളത്തിലും മറ്റ് ഇന്ത്യൻ ഭാഷകളിലും ഉത്തരം നൽകാൻ കഴിയും.
+കൃഷി, വിളകൾ, രോഗങ്ങൾ, ജലസേചനം, വളങ്ങൾ, കീടനാശിനികൾ, സർക്കാർ പദ്ധതികൾ, മാർക്കറ്റ് വിലകൾ, കാലാവസ്ഥാ അടിസ്ഥാനത്തിലുള്ള ശുപാർശകൾ, ആധുനിക കാർഷിക സാങ്കേതികവിദ്യകൾ എന്നിവയെക്കുറിച്ച് പ്രായോഗിക ഉപദേശം നൽകുക.
+${location ? `സ്ഥലം: ${location}` : ""}`,
+
+    pa: `ਤੁਸੀਂ ਭਾਰਤੀ ਕਿਸਾਨਾਂ ਦੀ ਮਦਦ ਕਰਨ ਵਾਲੇ ਮਾਹਿਰ ਖੇਤੀਬਾੜੀ ਸਲਾਹਕਾਰ ਹੋ।
+ਤੁਸੀਂ ਪੰਜਾਬੀ ਅਤੇ ਹੋਰ ਭਾਰਤੀ ਭਾਸ਼ਾਵਾਂ ਵਿੱਚ ਜਵਾਬ ਦੇ ਸਕਦੇ ਹੋ।
+ਖੇਤੀਬਾੜੀ, ਫਸਲਾਂ, ਬਿਮਾਰੀਆਂ, ਸਿੰਚਾਈ, ਖਾਦ, ਕੀੜੇ-ਮਾਰ ਦਵਾਈਆਂ, ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ, ਮਾਰਕੀਟ ਦੇ ਭਾਅ, ਮੌਸਮ ਆਧਾਰਿਤ ਸਿਫਾਰਸ਼ਾਂ ਅਤੇ ਆਧੁਨਿਕ ਖੇਤੀ ਤਕਨੀਕਾਂ ਬਾਰੇ ਵਿਹਾਰਕ ਸਲਾਹ ਦਿਓ।
+${location ? `ਸਥਾਨ: ${location}` : ""}`
+  };
+
+  return prompts[language as keyof typeof prompts] || prompts.en;
+}
+
+function getFallbackMessage(language: string): string {
+  const messages = {
+    en: "Sorry, I couldn't help you. Please try again.",
+    hi: "माफ करें, मैं आपकी मदद नहीं कर सकता। कृपया दोबारा प्रयास करें।",
+    bn: "দুঃখিত, আমি আপনাকে সাহায্য করতে পারিনি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+    te: "క్షమించండి, నేను మీకు సహాయం చేయలేకపోయాను. దయచేసి మళ్లీ ప్రయత్నించండి।",
+    ta: "மன்னிக்கவும், என்னால் உங்களுக்கு உதவ முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்।",
+    gu: "માફ કરશો, હું તમારી મદદ કરી શક્યો નથી. કૃપા કરીને ફરીથી પ્રયાસ કરો.",
+    mr: "माफ करा, मी तुमची मदत करू शकलो नाही. कृपया पुन्हा प्रयत्न करा.",
+    kn: "ಕ್ಷಮಿಸಿ, ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    ml: "ക്ഷമിക്കണം, എനിക്ക് നിങ്ങളെ സഹായിക്കാൻ കഴിഞ്ഞില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+    pa: "ਮਾਫ਼ ਕਰਨਾ, ਮੈਂ ਤੁਹਾਡੀ ਮਦਦ ਨਹੀਂ ਕਰ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  };
+
+  return messages[language as keyof typeof messages] || messages.en;
+}
+
+function getErrorMessage(language: string): string {
+  const messages = {
+    en: "AI advisory service is experiencing issues. Please try again later.",
+    hi: "AI सलाहकार सेवा में समस्या है। कृपया बाद में प्रयास करें।",
+    bn: "AI পরামর্শ সেবায় সমস্যা হচ্ছে। অনুগ্রহ করে পরে চেষ্টা করুন।",
+    te: "AI సలహా సేవలో సమস్యలు ఉన్నాయి. దయచేసి తర్వాత ప్రయత్నించండి।",
+    ta: "AI ஆலோசனை சேவையில் சிக்கல்கள் உள்ளன. தயவுசெய்து பின்னர் முயற்சிக்கவும்।",
+    gu: "AI સલાહ સેવામાં સમસ્યાઓ છે. કૃપા કરીને પછીથી પ્રયાસ કરો.",
+    mr: "AI सल्ला सेवेत समस्या आहेत. कृपया नंतर प्रयत्न करा.",
+    kn: "AI ಸಲಹಾ ಸೇವೆಯಲ್ಲಿ ಸಮಸ್ಯೆಗಳಿವೆ. ದಯವಿಟ್ಟು ನಂತರ ಪ್ರಯತ್ನಿಸಿ.",
+    ml: "AI ഉപദേശ സേവനത്തിൽ പ്രശ്നങ്ങളുണ്ട്. ദയവായി പിന്നീട് ശ്രമിക്കുക.",
+    pa: "AI ਸਲਾਹ ਸੇਵਾ ਵਿੱਚ ਸਮੱਸਿਆਵਾਂ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
+  };
+
+  return messages[language as keyof typeof messages] || messages.en;
 }
 
 export async function analyzeWeatherForFarming(weatherData: any, location: string): Promise<string> {
