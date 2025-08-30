@@ -119,12 +119,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Agriculture Assistant
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { message, location } = req.body;
+      const { message, location, language, context } = req.body;
       if (!message) {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      const response = await getAgriculturalAdvice(message, location);
+      const response = await getAgriculturalAdvice(message, location, language, context);
       res.json({ response });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
