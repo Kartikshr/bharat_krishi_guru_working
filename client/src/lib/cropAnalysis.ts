@@ -1,4 +1,4 @@
-// AI-powered crop analysis using Gemini
+// AI-powered crop analysis using backend API
 export const analyzeCrop = async (imageFile: File) => {
   try {
     // Create a description of the image for AI analysis
@@ -29,11 +29,17 @@ export const analyzeCrop = async (imageFile: File) => {
       disease: "AI Analysis Unavailable",
       confidence: 50,
       description: "AI analysis service is currently unavailable. Please consult with a local agricultural expert for proper diagnosis.",
+      symptoms: ["Unable to analyze symptoms from image"],
+      causes: ["Analysis service unavailable"],
       treatments: {
-        chemical: ["Consult local agricultural expert", "Apply general-purpose fungicide if needed"],
-        organic: ["Neem oil spray 3ml/liter", "Maintain proper crop hygiene"]
+        immediate: ["Consult local agricultural expert immediately"],
+        chemical: ["Apply general-purpose fungicide if needed", "Follow expert recommendations"],
+        organic: ["Neem oil spray 3ml/liter", "Maintain proper crop hygiene"],
+        cultural: ["Remove affected plant parts", "Improve field drainage"]
       },
-      prevention: ["Regular field monitoring", "Proper crop rotation", "Maintain field cleanliness"]
+      prevention: ["Regular field monitoring", "Proper crop rotation", "Maintain field cleanliness"],
+      cost_estimate: "₹500-1500 per acre",
+      timeline: "2-3 weeks for recovery"
     };
   }
 };

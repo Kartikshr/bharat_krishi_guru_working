@@ -32,6 +32,9 @@ All colors MUST be HSL for consistency.
     --accent-foreground: 150 25% 15%;
     --accent-hover: 48 85% 55%;
 
+    /* Primary hover state */
+    --primary-hover: 150 60% 20%;
+
     /* Nature Green variants */
     --nature-light: 110 40% 85%;
     --nature-medium: 120 45% 45%;

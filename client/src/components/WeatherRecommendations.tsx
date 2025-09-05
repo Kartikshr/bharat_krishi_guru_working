@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CloudRain, Sun, Thermometer, Droplets, Wind, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import weatherIcon from "@/assets/weather-icon.png";
 import { useLocation } from "@/contexts/LocationContext";
 
 interface WeatherData {
@@ -259,7 +258,9 @@ const WeatherRecommendations = () => {
     <section id="weather" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <img src={weatherIcon} alt="Weather Recommendations" className="w-20 h-20 mx-auto mb-6" />
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CloudRain className="w-10 h-10 text-white" />
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
             Weather-Based Recommendations
           </h2>

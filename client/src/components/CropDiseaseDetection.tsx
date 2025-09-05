@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, Zap, Leaf, Shield, Clock, IndianRupee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { analyzeCrop } from "./huggingface";
+import { analyzeCrop } from "@/lib/cropAnalysis";
 
 interface DiseaseAnalysis {
   disease: string;

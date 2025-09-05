@@ -36,11 +36,23 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          hover: "hsl(var(--accent-hover))",
+        },
+        nature: {
+          light: "hsl(var(--nature-light))",
+          medium: "hsl(var(--nature-medium))",
+          dark: "hsl(var(--nature-dark))",
+        },
+        earth: {
+          light: "hsl(var(--earth-light))",
+          medium: "hsl(var(--earth-medium))",
+          dark: "hsl(var(--earth-dark))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        "primary-hover": "hsl(var(--primary-hover))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -63,6 +75,10 @@ export default {
         },
       },
       keyframes: {
+        "caret-blink": {
+          "0%,70%,100%": { opacity: "1" },
+          "20%,50%": { opacity: "0" },
+        },
         "accordion-down": {
           from: {
             height: "0",
@@ -81,8 +97,19 @@ export default {
         },
       },
       animation: {
+        "caret-blink": "caret-blink 1.25s ease-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      boxShadow: {
+        'card': 'var(--shadow-card)',
+        'feature': 'var(--shadow-feature)',
+        'hero': 'var(--shadow-hero)',
+      },
+      backgroundImage: {
+        'gradient-hero': 'var(--gradient-hero)',
+        'gradient-card': 'var(--gradient-card)',
+        'gradient-accent': 'var(--gradient-accent)',
       },
     },
   },
